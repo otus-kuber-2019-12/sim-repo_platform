@@ -1,4 +1,4 @@
-Примеры использования контроллеров ReplicaSet, Deployment, DaemonSet.
+<H2>Примеры использования контроллеров ReplicaSet, Deployment, DaemonSet.</H2>
 
 1. с использованием манифеста frontend-replicaset.yaml сделаны проверки:\
 1.1. развертывание 1-го Пода\
