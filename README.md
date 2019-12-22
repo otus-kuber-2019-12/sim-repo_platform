@@ -1,6 +1,6 @@
 <H2>Примеры использования контроллеров ReplicaSet, Deployment, DaemonSet.</H2>
 
-1. с использованием манифеста frontend-replicaset.yaml сделаны проверки:\
+<H3>1. с использованием манифеста frontend-replicaset.yaml сделаны проверки:</H3>\
 1.1. развертывание 1-го Пода\
 1.2. скалирование реплик с 1 до 3 императивно\
 1.3. автоматическое восстановление 3х реплик после ручного удаления (kubectl delete pods ..)\
@@ -8,21 +8,21 @@
 1.5. правка в манифесте - изменение реплик 1->3 и повторное применение\
 1.6. ReplicaSet не может отслеживать обновленные Поды: обновление приложения до v0.0.2 с соотв-ей правкой в манифесте не привело к обновлению запущенных Подов
 
-2. с использованием манифеста paymentservice-deployment.yaml сделаны проверки:\
+<H3>2. с использованием манифеста paymentservice-deployment.yaml сделаны проверки:</H3>\
 2.1. применением манифеста создает RS и Поды\
 2.2. обновление приложения до v0.0.2 с правкой в манифесте корректно обновляет все запущенные Поды, а также создает новый RS для управления ими (старый остается висеть для управления старыми Подами v0.0.1, которых уже нет)\
 2.3. можно откатываться до предыдущей версии через kubectl rollout undo..
 
-3. Deployment: maxSurge, maxUnavailable\
+<H3>3. Deployment: maxSurge, maxUnavailable</H3>\
 3.1. создание аналога blue-green - paymentservice-deployment-bg.yaml\
 3.2. reverse rolling update - paymentservice-deployment-reverse.yaml
 
-4. Probes на примере манифеста frontend-deployment.yaml:\
+<H3>4. Probes на примере манифеста frontend-deployment.yaml:</H3>\
 4.1. проверка readinessProbe для заведемо корректно работающих приложений: Running -> Ready \
 4.2. readinessProbe для баговых приложений не даст перевести созданный Под в состояние Ready, он так останется в Running + тут же Deployment перестанет продолжать обновление
 
 
-5. DaemonSet на примере node-exporter-daemonset.yaml:\
+<H3>5. DaemonSet на примере node-exporter-daemonset.yaml:</H3>\
 5.1. добавлена возможность развернуть Под на мастер- и воркер-нодах
 
 
