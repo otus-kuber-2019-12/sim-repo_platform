@@ -1,0 +1,11 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: dave-role-binding
+subjects:
+  - kind: ServiceAccount
+    name: dave
+roleRef:
+  kind: Role
+  name: no-permissions
+  apiGroup: rbac.authorization.k8s.io
