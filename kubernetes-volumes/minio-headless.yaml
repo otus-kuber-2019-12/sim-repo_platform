@@ -10,4 +10,4 @@ spec:
     - port: 9000
       name: minio
   selector:
-    app: mini
+    app: minio
