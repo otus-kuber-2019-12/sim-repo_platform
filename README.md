@@ -78,10 +78,15 @@
 
 6.  Canary для Ingress:\
 6.1. preprod.yaml - конфигурация для развертывания препрод среды\
-6.2. product.yaml - конфа для продукта 
+6.2. product.yaml - конфа для продукта\
 
 
 
+<H2>Kubernetes Volumes</H2>
 
+Пример монтирования объекта Secret через переменные среды\
+1. minio-secret.yaml - secret-объекты\
+2. minio-statefullset.yaml - statefullset приложение minio с сылкой на secret\
+3. minio-headless.yaml -headless сервис для доступа к приложению\
 
 
