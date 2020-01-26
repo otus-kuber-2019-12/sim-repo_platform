@@ -1,0 +1,54 @@
+# https://github.com/roboll/helmfile
+environments:
+    default:
+        values:
+        - environments/default/values.yaml
+        missingFileHandler: Warn
+    dev: # helmfile --environment dev sync`
+        values:
+        - environments/dev/values.yaml
+        missingFileHandler: Debug
+    production: # helmfile --environment production sync`
+        values:
+        - environments/production/values.yaml
+        missingFileHandler: Error
+
+
+repositories:
+- name: harbor
+  url: https://helm.goharbor.io
+- name: jetstack
+  url: https://charts.jetstack.io
+- name: stable
+  url: https://kubernetes-charts.storage.googleapis.com
+
+
+helmDefaults:
+    wait: true
+    timeout: 600
+
+
+releases:
+  - name: nginx-ingress
+    chart: "stable/nginx-ingress"
+    namespace: nginx-ingress
+    version: {{ index .Environment.Values.version "nginx-ingress" }}
+    missingFileHandler: Warn
+    values:
+      - "./environments/{{ .Environment.Name }}/nginx-ingress.yaml"
+
+  - name: cert-manager
+    chart: jetstack/cert-manager
+    namespace: cert-manager
+    version: {{ index .Environment.Values.version "cert-manager" }}
+    missingFileHandler: Warn
+    values:
+      - "./environments/{{ .Environment.Name }}/cert-manager.yaml"
+
+  - name: harbor
+    chart: harbor/harbor
+    namespace: harbor
+    version: {{ .Environment.Values.version.harbor }}
+    missingFileHandler: Warn
+    values:
+      - "./environments/{{ .Environment.Name }}/harbor.yaml"
