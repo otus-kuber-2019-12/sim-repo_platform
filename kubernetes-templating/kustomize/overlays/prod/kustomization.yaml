@@ -4,7 +4,7 @@ bases:
 NameSuffix: -prod
 namespace: hipster-shop-prod
 commonLabels:
-  app: productcatalogservice-prod
+  env: hipster-shop-prod
 
 patchesStrategicMerge:
   - deployment-catalog-patch.yaml
