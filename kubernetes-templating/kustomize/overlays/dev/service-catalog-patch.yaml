@@ -4,4 +4,4 @@ metadata:
   name: productcatalogservice
 spec:
   selector:
-    app: productcatalogservice-prod
+    app: productcatalogservice
