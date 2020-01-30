@@ -90,3 +90,41 @@
 3. minio-headless.yaml -headless сервис для доступа к приложению\
 
 
+<H2>Kubernetes Templating</H2>
+
+1. деплой готовых helm-charts:\
+1.1. подготовка кластера kubernetes на gcp\
+1.2. установка google sdk для доступа к kubernetes из local\
+1.3. монтирование chart-ов nginx-ingress, harbor, chartmuseum, cert-manager в локальный репо\
+1.4. деплой чартов:\
+требуется предварительно ручного создания namespaces;\
+установка командой: helm upgrade --install;\
+проверка корректной установки через флаг: --dry-run --debug;\
+1.4.1.  nginx-ingress -  ставится по-дефолту\
+1.4.2.  cert-manager -  настройка через ACME-issuer (Let's encrypted):\
+(важно в spec.acme указать url для прод: https://acme-v02.api.letsencrypt.org/directory )\
+1.4.3. chartmuseum \
+(важно в values: ingress.annotations указать:\
+cert-manager.io/cluster-issuer: letsencrypt-production\
+cert-manager.io/acme-challenge-type: http01 \
+иначе сертификат не будет выписан)\
+1.4.4. harbor - по аналогии с chartmuseum\
+2. свой helm-chart на примере hipster-shop:  выделить frontend и параметризовать число реплик,  версию образа, внешний порт (targetPort)\
+2.1. удаляем работающий frontend: helm delete frontend -n hipster-shop\
+2.2. берем исходники манифестов для frontend из all-hipster-shop.yaml + пишем отдельный nginx-ingress\
+2.3. шаблонизируем frontend через values.yaml\
+2.4. добавляем зависимость в hipster-shop/Chart.yaml\
+3. helm-secrets:\
+3.1. установка плагина\
+3.2. генерация pgp-ключа\
+3.3. создание секрета frontend/secrets.yaml  и его шифрование с помощью ключа\
+3.4. протягивание секрета в helm \
+4. jsonnet-kubecfg: шаблонизация hipster-shop/paymentservice + shippingservice\
+4.1. установка плагина\
+4.2. создание собственного шаблона: kubecfg/services.jsonnet\
+4.3. проверка через команду: kubecfg show services.jsonnet\
+4.4. деплой: kubecfg update services.jsonnet --namespace hipster-shop\
+5. Kustomize: переводим hipster-shop/productcatalogservice на kustomize:\
+5.1. установка плагина\
+5.2. создаем ресурсы для базы kustomize/base на основе деплоймента и сервиса\
+5.3. шаблонизируем по принципу окружений dev/prod: kustomize/overlays\
