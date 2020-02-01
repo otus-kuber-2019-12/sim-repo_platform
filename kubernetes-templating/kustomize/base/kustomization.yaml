@@ -1,0 +1,3 @@
+resources:
+- deployment-catalog.yaml
+- service-catalog.yaml

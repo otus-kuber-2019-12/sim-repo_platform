@@ -1,0 +1,8 @@
+bases:
+- ../../base/
+
+namespace: hipster-shop
+
+patchesStrategicMerge:
+  - deployment-catalog-patch.yaml
+  - service-catalog-patch.yaml

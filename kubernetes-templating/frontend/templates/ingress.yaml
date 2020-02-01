@@ -1,0 +1,24 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: ingress-front-end
+  labels:
+    name: front-end
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    kubernetes.io/tls-acme: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-production"
+    cert-manager.io/acme-challenge-type: http01
+spec:
+   tls:
+   - hosts:
+     - shop.35.223.238.115.nip.io
+     secretName: hypsershop.tls
+   rules:
+   - host: shop.35.223.238.115.nip.io
+     http:
+       paths:
+       - path: /
+         backend:
+           serviceName: frontend
+           servicePort: 80
