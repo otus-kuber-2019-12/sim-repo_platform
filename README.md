@@ -153,4 +153,18 @@ cert-manager.io/acme-challenge-type: http01 \
 лечение: переустановить python:\
 brew uninstall --ignore-dependencies python3\
 brew install python3\
+5. Вывод успешно выполненных джобов: \
+(base) iMac-Igor:sim-repo_platform igorivanov$ kubectl get jobs \
+NAME                         COMPLETIONS   DURATION   AGE\
+backup-mysql-instance-job    1/1           1s         34m\
+restore-mysql-instance-job   1/1           6m9s       36m\
+6. Вывод успешно созданных записей в MySQL:\
+(base) iMac-Igor:sim-repo_platform igorivanov$ kubectl exec -it $MYSQLPOD -- mysql -potuspassword -e "select * from test;" otus-database\
+mysql: [Warning] Using a password on the command line interface can be insecure.\
++----+-------------+\
+| id | name        |\
++----+-------------+\
+|  1 | some data   |\
+|  2 | some data-2 |\
++----+-------------+\
 
