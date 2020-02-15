@@ -128,3 +128,29 @@ cert-manager.io/acme-challenge-type: http01 \
 5.1. установка плагина\
 5.2. создаем ресурсы для базы kustomize/base на основе деплоймента и сервиса\
 5.3. шаблонизируем по принципу окружений dev/prod: kustomize/overlays\
+
+
+<H2>Kubernetes Operators</H2>
+
+1. Для проекта создана папка kubernetes-operators и 2е поддиректории build и deploy\
+2. . Простой пример создания cr:\ 
+2.1. в папке ./deploy заведены 2а манифеста CustomResourceDefinition + CustomResource: crd.yml, cr.yml\
+2.2. crd  определяет с каким типом CR работает; проводит валидацию полей манифеста cr\
+2.3. после применения проверка через:\
+- kubectl get crd\
+- kubectl get mysqls.otus.homework\
+3. Разработка оператора через kopf-framework:\
+3.1. для начала необходимо установить все python-библиотеки: jinja, "pip install kopf",  "pip install kubernetes"\
+3.2. в папке ./build заведена подпапка templates для хранения шаблонов манифество, куда будет производится инъекция значений\
+(Все шаблоны-манифестов с расширениями j2, чтобы их могла использовать библиотека Jinja.)\
+3.3. создан python-скрипт "mysql-operator.py", в котором реализована логика создания kubernetes-оператора\
+3.2.1. jinja - нужна для injection-pattern\
+3.2.2. kopf - создает зависимости создаваемых CustomResources к управляемому.  Таким образом реализуется каскадное удаление через удаление CustomResource.\
+3.2.3. kubernetes-client-sdk - библиотека взаимодействия с kubernetes-api из python\
+4. Важные моменты:
+4.1. перед созданием оператора (kopf run mysql-operator.py) обязательно предварительно выкатить в кластер CRD, CR\
+4.2. иногда возникает следующая проблема: при удалении CRD консоль сообщает что объект deleted, но не передает управление  и переходит в режим standby\
+лечение: переустановить python:\
+brew uninstall --ignore-dependencies python3\
+brew install python3\
+
