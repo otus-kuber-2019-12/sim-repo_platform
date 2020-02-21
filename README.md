@@ -204,3 +204,35 @@ metadata: <br>
   labels: <br>
     release: monitoring <br>
     app: traefik-metrics <br>
+
+
+<H2>Kubernetes Logging</H2>
+
+1. Создание 2х пулов Нод (pool-nodes): default-pool(1а нода) и infra(3и ноды)
+2. Установка ограничения на авторазмещения объектов на infra - Taint
+3. Установка HipsterShop c frontend на порт, отличный от 80
+4. Настройка Helm 2 для helm.elastic
+5. Установка EFK <br>
+         5.1.  helm upgrade --install elasticsearch elastic/elasticsearch --namespace observability 
+         5.2.  helm upgrade --install kibana elastic/kibana --namespace observability 
+         5.3.  helm upgrade --install fluent-bit stable/fluent-bit --namespace observability
+(ELK разметился на нодах из default-pool) <br>
+
+6. Перебрасываем EFK на infra: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration <br>
+7. Установка nginx-ingress: https://github.com/helm/charts/tree/master/stable/nginx-ingress <br>
+8. Также перебрасываем nginx-ingress через nginx-ingress.values.yaml <br>
+9. Вывод доступа к Kibana: kibana.values.yaml <br>
+10. Настройка fluent bit для создания индекса в Kibana через fluent-bit.values.yaml <br>
+11. Установка Prometheus Operator: https://github.com/helm/charts/tree/master/stable/prometheus-operator<br>
+12. Установка ES экспортера <br>
+helm upgrade --install elasticsearch-exporter stable/elasticsearch-exporter --set es.uri=http://elasticsearch-master:9200 --set serviceMonitor.enabled=true -- namespace=observability <br>
+13. Вывод доступа к Grafana: grafana.values.yaml <br>
+14. Вывод доступа к Alertmanager: alertmanager.values.yaml <br>
+15. Вывод доступа к Alertmanager: alertmanager.values.yaml <br>
+16. Настройка Kibana дашборда: export.ndjson <br>
+17. Установка Loki + Promtail <br>
+helm upgrade --install loki loki/loki —namespace=observability <br>
+helm upgrade --install promtail loki/promtail --set «loki.serviceName=loki» --namespace=observability <br>
+18. Модифицировать Prometheus Operator таким образом, чтобы datasource Loki создавался сразу после установки оператора: prometheus-operator.values.yaml <br> 
+19. Настройка Grafana дашборда: ngnix-ingress.json <br>
+
