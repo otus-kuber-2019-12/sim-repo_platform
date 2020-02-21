@@ -1,0 +1,16 @@
+commonLabels:
+    prometheus: default
+  
+prometheus:
+    prometheusSpec:
+      serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelector: []
+  
+grafana:
+    additionalDataSources:
+      - name: Loki
+        type: loki
+        access: proxy
+        url: http://loki.loki:3100
+        jsonData:
+          maxLines: 1000

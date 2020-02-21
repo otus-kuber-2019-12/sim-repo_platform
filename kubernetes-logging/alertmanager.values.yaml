@@ -1,0 +1,10 @@
+alertmanager:
+    enabled: true
+    ingress:
+        enabled: true
+        annotations:
+        kubernetes.io/ingress.class: "nginx"
+        nginx.ingress.kubernetes.io/rewrite-target: /$1
+        nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+        hosts:
+        - alertmanager.35.232.62.103.xip.io
