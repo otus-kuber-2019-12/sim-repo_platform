@@ -173,34 +173,34 @@ mysql: [Warning] Using a password on the command line interface can be insecure.
 
 <H2>Kubernetes Monitoring</H2>
 1. Развертывание Prometheus Operator производится через helm2 <br>
-2. Для установки helm в папке ./helm2 находится RBAC-настройка\
-3. Папка nginx содержит Dockerfile \
-4. Установка PO делалась через команду:\
-helm install --name my-release stable/prometheus-operator\
-5. Все проверки работоспособности компонентов PO через проброс портов:\
-5.1. prometheus dashboard: kubectl port-forward prometheus-my-release-prometheus-oper-prometheus-0 9090 \
-5.2. alert: kubectl port-forward alertmanager-my-release-prometheus-oper-alertmanager-0 9093\
-5.3. grafana: kubectl port-forward my-release-grafana-<..>  3000\
-6. login/psw для Grafana:\
-6.1. kubectl get secret\
-6.2. kubectl get secret my-release-grafana -o yaml\
-7. Заметки:\
-7.1. Посмотреть список обслуживаемых метрик:\
-$ kubectl get servicemonitors.monitoring.coreos.com\
-7.2. Прометеус находит Сервис-Мониторы по меткам. Перед деплоем Сервис-Монитора нужно убедиться, что он содержит ту же метку, что и в конфиге Прометеуса:\
-$ kubectl get prometheuses.monitoring.coreos.com -oyaml\
-..\
-podMonitorSelector:\
-      matchLabels:\
-        release: monitoring\
-..\
+2. Для установки helm в папке ./helm2 находится RBAC-настройка <br>
+3. Папка nginx содержит Dockerfile <br>
+4. Установка PO делалась через команду: <br>
+helm install --name my-release stable/prometheus-operator <br>
+5. Все проверки работоспособности компонентов PO через проброс портов: <br>
+5.1. prometheus dashboard: kubectl port-forward prometheus-my-release-prometheus-oper-prometheus-0 9090 <br>
+5.2. alert: kubectl port-forward alertmanager-my-release-prometheus-oper-alertmanager-0 9093 <br>
+5.3. grafana: kubectl port-forward my-release-grafana-<..>  3000 <br>
+6. login/psw для Grafana: <br>
+6.1. kubectl get secret <br>
+6.2. kubectl get secret my-release-grafana -o yaml <br>
+7. Заметки: <br>
+7.1. Посмотреть список обслуживаемых метрик: <br>
+$ kubectl get servicemonitors.monitoring.coreos.com <br>
+7.2. Прометеус находит Сервис-Мониторы по меткам. Перед деплоем Сервис-Монитора нужно убедиться, что он содержит ту же метку, что и в конфиге Прометеуса: <br>
+$ kubectl get prometheuses.monitoring.coreos.com -oyaml <br>
+.. <br>
+podMonitorSelector: <br>
+      matchLabels: <br>
+        release: monitoring <br>
+.. <br>
 
-Тогда при создании манифеста нужно добавить:\
+Тогда при создании манифеста нужно добавить: <br>
 
-apiVersion: monitoring.coreos.com/v1\
-kind: ServiceMonitor\
-metadata:\
-  name: traefik\
-  labels:\
-    release: monitoring\
-    app: traefik-metrics\
+apiVersion: monitoring.coreos.com/v1 <br>
+kind: ServiceMonitor <br>
+metadata: <br>
+  name: traefik <br>
+  labels: <br>
+    release: monitoring <br>
+    app: traefik-metrics <br>
