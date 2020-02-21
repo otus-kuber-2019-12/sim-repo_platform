@@ -51,43 +51,43 @@
 
 <H2>Kubernetes Networks</H2>
 
-1. Хеш-таблицы на основе IPVS:\
-1.1. настройка: $ kubectl --namespace kube-systemedit configmap/kube-proxy \
-1.2. рестарт kube-proxy: $ kubectl --namespace kube-system delete pod --selector='k8s-app=kube-proxy'\
-1.3. создание bash-скрипта для cleanup iptables\
-1.4. добавление ipvsadm в minikube\
+1. Хеш-таблицы на основе IPVS:<br>
+1.1. настройка: $ kubectl --namespace kube-systemedit configmap/kube-proxy <br>
+1.2. рестарт kube-proxy: $ kubectl --namespace kube-system delete pod --selector='k8s-app=kube-proxy'<br>
+1.3. создание bash-скрипта для cleanup iptables<br>
+1.4. добавление ipvsadm в minikube<br>
 
-2. Установка и настройка MetalLB:\
-2.1. инсталяшка: kubectl apply -fhttps://raw.githubusercontent.com/google/metallb/v0.8.0/manifests/metallb.yaml \
-2.2. metallb-config.yaml - настройка MetalLB \
-2.3. проверка логов: kubectl --namespace metallb-system logs pod/controller-XXXXXXXX-XXXXXX \
-2.4. проверка пинга ip балансировщика в хостовой ОС \
-2.5. проверка доступа к приложению через http-запрос \
+2. Установка и настройка MetalLB:<br>
+2.1. инсталяшка: kubectl apply -fhttps://raw.githubusercontent.com/google/metallb/v0.8.0/manifests/metallb.yaml <br>
+2.2. metallb-config.yaml - настройка MetalLB <br>
+2.3. проверка логов: kubectl --namespace metallb-system logs pod/controller-XXXXXXXX-XXXXXX <br>
+2.4. проверка пинга ip балансировщика в хостовой ОС<br>
+2.5. проверка доступа к приложению через http-запрос <br>
 
-3. DNS через MetalLB :\
-3.1. dns-service-tcp.yaml / dns-service-udp .yaml  - настройка для TCP/UDP \
+3. DNS через MetalLB : <br>
+3.1. dns-service-tcp.yaml / dns-service-udp .yaml  - настройка для TCP/UDP <br>
 
-4. Создание IngressСоздание Ingress :\
-4.1. установка kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/mandatory.yaml\
-4.2. nginx-lb.yaml - создание объекта LoadBalancer\
-4.3. web-svc-headless.yaml - создание Headless сервиса\
-4.4. web-ingress.yaml - создание Ingress-прокси\
+4. Создание IngressСоздание Ingress : <br>
+4.1. установка kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/mandatory.yaml <br>
+4.2. nginx-lb.yaml - создание объекта LoadBalancer <br>
+4.3. web-svc-headless.yaml - создание Headless сервиса <br>
+4.4. web-ingress.yaml - создание Ingress-прокси <br>
 
-5. Ingress для Dashboard:\
-5.1. dashboard-ingress.yaml - настройка https-доступа к дашборду через Ingress-прокси\
+5. Ingress для Dashboard: <br>
+5.1. dashboard-ingress.yaml - настройка https-доступа к дашборду через Ingress-прокси <br>
 
-6.  Canary для Ingress:\
-6.1. preprod.yaml - конфигурация для развертывания препрод среды\
-6.2. product.yaml - конфа для продукта\
+6.  Canary для Ingress: <br>
+6.1. preprod.yaml - конфигурация для развертывания препрод среды <br>
+6.2. product.yaml - конфа для продукта <br>
 
 
 
 <H2>Kubernetes Volumes</H2>
 
-Пример монтирования объекта Secret через переменные среды\
-1. minio-secret.yaml - secret-объекты\
-2. minio-statefullset.yaml - statefullset приложение minio с сылкой на secret\
-3. minio-headless.yaml -headless сервис для доступа к приложению\
+Пример монтирования объекта Secret через переменные среды <br>
+1. minio-secret.yaml - secret-объекты <br>
+2. minio-statefullset.yaml - statefullset приложение minio с сылкой на secret <br>
+3. minio-headless.yaml -headless сервис для доступа к приложению <br>
 
 
 <H2>Kubernetes Templating</H2>
