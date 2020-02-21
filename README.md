@@ -172,7 +172,7 @@ mysql: [Warning] Using a password on the command line interface can be insecure.
 
 
 <H2>Kubernetes Monitoring</H2>
-1. Развертывание Prometheus Operator производится через helm2\
+1. Развертывание Prometheus Operator производится через helm2 <br>
 2. Для установки helm в папке ./helm2 находится RBAC-настройка\
 3. Папка nginx содержит Dockerfile \
 4. Установка PO делалась через команду:\
