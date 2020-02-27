@@ -513,8 +513,8 @@ kubectl apply -f example-k8s-spec.yml --record
 kubectl port-forward pod/vault-agent-example 8080:80
 ```
 *output*
-![Image of Yaktocat](https://github.com/otus-kuber-2019-12/sim-repo_platform/images/vault-nginx.png)
-
+![Image of Yaktocat](https://github.com/otus-kuber-2019-12/sim-repo_platform/blob/kubernetes-vault/images/vault-nginx.png)
+                                 
 
 
 
