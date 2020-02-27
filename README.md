@@ -526,11 +526,11 @@ git clone https://github.com/hashicorp/vault-guides.git <br>
 В каталоге identity/vault-agent-k8s-demo нужно: <br>
 Заменить в vault-agent-config.hcl auto_auth.config.role на свою <br>
 Дальше применить оба hcl-файла как configmap <br>
-
+```
 kubectl create configmap example-vault-agent-config —from-file=./configs-k8s/ <br>
 
 kubectl apply -f example-k8s-spec.yml —record <br>
-
+```
 
 
 
