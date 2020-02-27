@@ -289,88 +289,92 @@ policies             [«root"]
 ```
 
 
-10. Добавим секреты: <br>
+6. Add secrets: <br>
+```
+kubectl exec -it vault-0 -- vault secrets enable --path=otus kv 
+kubectl exec -it vault-0 -- vault kv put otus/otus-ro/config username='otus' password='asajkjkahs' 
+kubectl exec -it vault-0 -- vault kv put otus/otus-rw/config username='otus' password='asajkjkahs'  
+```
 
-kubectl exec -it vault-0 -- vault secrets enable --path=otus kv <br>
-kubectl exec -it vault-0 -- vault kv put otus/otus-ro/config username='otus' password='asajkjkahs' <br>
-kubectl exec -it vault-0 -- vault kv put otus/otus-rw/config username='otus' password='asajkjkahs'  <br>
+7. Check: <br>
+```
+kubectl exec -it vault-0 -- vault read otus/otus-ro/config 
+kubectl exec -it vault-0 -- vault kv get otus/otus-rw/config 
+```
 
+output:  <br>
+```
+Key                 Value 
+---                 ----- 
+refresh_interval    768h 
+password            asajkjkahs 
+username            otus 
+```
 
-11. Посмотрим как записался секрет: <br>
-kubectl exec -it vault-0 -- vault read otus/otus-ro/config <br>
-kubectl exec -it vault-0 -- vault kv get otus/otus-rw/config <br>
+8. Enable k8s-auth: <br>
+```
+kubectl exec -it vault-0 -- vault auth enable kubernetes
+kubectl exec -it vault-0 -- vault auth list
+```
+output:  <br>
+```
+Path           Type          Accessor                    Description
+----           ----          --------                    -----------
+kubernetes/    kubernetes    auth_kubernetes_e03cf9ad    n/a 
+token/         token         auth_token_06d49d56         token based credentials
+```
 
+9. create RBAC for vault-auth: <br>
 
-Key                 Value <br>
----                 ----- <br>
-refresh_interval    768h <br>
-password            asajkjkahs <br>
-username            otus <br>
-
-
-12. Включим авторизацию через k8s: <br>
-
-kubectl exec -it vault-0 -- vault auth enable kubernetes <br>
-
-kubectl exec -it vault-0 -- vault auth list <br>
-
-Path           Type          Accessor                    Description <br>
-----           ----          --------                    ----------- <br>
-kubernetes/    kubernetes    auth_kubernetes_e03cf9ad    n/a <br>
-token/         token         auth_token_06d49d56         token based credentials <br>
-
-
-13. Создадим RBAC: <br>
-
-kubectl create serviceaccount vault-auth <br>
+```
+kubectl create serviceaccount vault-auth 
+```
 
 vault-auth-service-account.yml <br>
 
+```
+apiVersion: rbac.authorization.k8s.io/v1beta1 
+kind: ClusterRoleBinding 
+metadata:
+    name: role-tokenreview-binding 
+    namespace: default 
+roleRef: 
+    apiGroup: rbac.authorization.k8s.io kind: ClusterRole 
+    name: system:auth-delegator  
+subjects: 
+    - kind: ServiceAccount
+    name: vault-auth 
+    namespace: default 
+```
 
-apiVersion: rbac.authorization.k8s.io/v1beta1  <br>
-kind: ClusterRoleBinding  <br>
-metadata:  <br>
-    name: role-tokenreview-binding  <br>
-    namespace: default  <br>
-roleRef:  <br>
-    apiGroup: rbac.authorization.k8s.io kind: ClusterRole  <br>
-    name: system:auth-delegator  <br>
-subjects:  <br>
-    - kind: ServiceAccount  <br>
-    name: vault-auth  <br>
-    namespace: default  <br>
-    
-14. Подготовим переменные для записи в Конфиг Кубер Авторизации: <br>
 
-export VAULT_SA_NAME=$(kubectl get sa vault-auth -o jsonpath="{.secrets[*]['name']}")  <br>
-echo $VAULT_SA_NAME <br>
-vault-auth-token-m5v4c <br>
-
-export SA_JWT_TOKEN=$(kubectl get secret $VAULT_SA_NAME -o jsonpath="{.data.token}" | base64 --decode; echo) <br>
+10. Set environments for K8S Vault-auth: <br>
+```
+export VAULT_SA_NAME=$(kubectl get sa vault-auth -o jsonpath="{.secrets[*]['name']}")
+export SA_JWT_TOKEN=$(kubectl get secret $VAULT_SA_NAME -o jsonpath="{.data.token}" | base64 --decode; echo)
+export SA_CA_CRT=$(kubectl get secret $VAULT_SA_NAME -o jsonpath="{.data['ca\.crt']}" | base64 --decode; echo)
+export K8S_HOST=$(more ~/.kube/config | grep server |awk '/http/ {print $NF}') 
+```
+echo $VAULT_SA_NAME 
+```
+vault-auth-token-m5v4c
+```
 echo $SA_JWT_TOKEN<br>
 
-eyJhbGciOiJSUzI1NiIsImtpZCI6Im9IdGdyOFoxSmFSdDdKWnNtQ3d6YnVjX0FPRS1KaG9yNi1COTB5SUc5NEkifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6InZhdWx0LWF1dGgtdG9rZW4tbTV2NGMiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC5uYW1lIjoidmF1bHQtYXV0aCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6ImZlYzJjYWFjLTE4MjMtNGU2Zi05ZjkzLTM4N2ZlNGIxMzhjZiIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDpkZWZhdWx0OnZhdWx0LWF1dGgifQ.sXiJriVOaJE0DQPgU2Si4V2a2LEt98v_9xZi59XO6AvvOWfqrh7mU8y6Z4Zd0y3SXwnPyyQCrmpbKXCFhctp8xhls2rrZLJyhMpHvNXG4Zjt4yGASsTkGohc2gBsRnOypJOGIOYC4kFtaicu-drDtEMmBklL4Po6i4mZFKPFmB6C8o82fc80miLyN46cx1yQr0dQr6DtO0sveKvB42_Vl0btTRCRpkCQVwc8K386WXjuD7NAT4yTNwb2IGQNmY1RJd7Yqy4MDzm0Dpvv-w1jCVorMkezgiKaQmBGuk8-TOoq63xsr73-elE5kS_vRY47dMlszKp5SlwaeNzTOcmVdA<br>
-
-
-export SA_CA_CRT=$(kubectl get secret $VAULT_SA_NAME -o jsonpath="{.data['ca\.crt']}" | base64 --decode; echo) <br>
-
+```
+eyJhbGciOiJSUzI1NiIsImtpZCI6Im9IdGdyOFoxSmFSdDdKWnNtQ3d6YnVjX0FPRS1KaG9yNi1COTB5SUc5NEkifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6InZhdWx0LWF1dGgtdG9rZW4tbTV2NGMiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC5uYW1lIjoidmF1bHQtYXV0aCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6ImZlYzJjYWFjLTE4MjMtNGU2Zi05ZjkzLTM4N2ZlNGIxMzhjZiIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDpkZWZhdWx0OnZhdWx0LWF1dGgifQ.sXiJriVOaJE0DQPgU2Si4V2a2LEt98v_9xZi59XO6AvvOWfqrh7mU8y6Z4Zd0y3SXwnPyyQCrmpbKXCFhctp8xhls2rrZLJyhMpHvNXG4Zjt4yGASsTkGohc2gBsRnOypJOGIOYC4kFtaicu-drDtEMmBklL4Po6i4mZFKPFmB6C8o82fc80miLyN46cx1yQr0dQr6DtO0sveKvB42_Vl0btTRCRpkCQVwc8K386WXjuD7NAT4yTNwb2IGQNmY1RJd7Yqy4MDzm0Dpvv-w1jCVorMkezgiKaQmBGuk8-TOoq63xsr73-elE5kS_vRY47dMlszKp5SlwaeNzTOcmVdA
+```
 echo $SA_CA_CRT <br>
------BEGIN CERTIFICATE----- MIIDCzCCAfOgAwIBAgIQZDI5+F+Of+BcbPfkdsUYDjANBgkqhkiG9w0BAQsFADAv MS0wKwYDVQQDEyQ5NDBhMWFiNi0xN2E3LTRkYTgtYTk4NC02MjJiODg1MTAzMzAw HhcNMjAwMTI2MTYwMzI0WhcNMjUwMTI0MTcwMzI0WjAvMS0wKwYDVQQDEyQ5NDBh MWFiNi0xN2E3LTRkYTgtYTk4NC02MjJiODg1MTAzMzAwggEiMA0GCSqGSIb3DQEB AQUAA4IBDwAwggEKAoIBAQClyFpd7wgVRYs/bLaQFa24jGCma23cxxjz0HkYN+ed e9+AnC3y3BxbDWkB+25UqbmGRt6BSlfxYiVyZkW1er4LhvXbSb67kOoJpzi7+TVl ccLNx3bohEfPxs7wY5WaqE6CL2eSzO9P8Tus6YGN1iT99ESUnpQZ+JppR9luYrRP WIb+dKYccW9JEmJ/DvbxSQDHiM5YPZTi5lEhC7zjvsze32VZFALCu6uXBpROkYjG jYpHvPFs0/xGVKwXI86yvZBOKg1ZxjvSe2R0S8slSWxGMEDm5CVz/MI6vo59jEh5 ksvA5RFhvq+CHbiYbBzSkS6wyb4Pop3MQeqyP118ley1AgMBAAGjIzAhMA4GA1Ud DwEB/wQEAwICBDAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQBf l+CSXXwyVK8krbrAv3IcX1z6iDS93atzRYk6AMrkQ0hsZNxalNWJCjnArIeuoUJc 2ASGfYdhQB6/zXrugLlB86F/Dj8rFpB2SebrE+WOkxOV5zorNN41lJpnf33NJNT9 SCVitbYIcamrSQHIbrW1HqUXxp8xDzd00lBOv8lch0GTt+MDHXfF14Ovjbx0Ti8J y5RvavtgACASCT4Bl1wFAQSQzBxj1vDdWj1nCqkMMPE9CKHjfUy2jqNKjlnJ9Iwo 1BIdhIcbvMsUe5DMrLj7HjwYb4W7 <br>
-
-export K8S_HOST=$(more ~/.kube/config | grep server |awk '/http/ {print $NF}') <br>
-
-
-
-15. Запишем конфиг в vault: <br>
-
+```
+-----BEGIN CERTIFICATE----- MIIDCzCCAfOgAwIBAgIQZDI5+F+Of+BcbPfkdsUYDjANBgkqhkiG9w0BAQsFADAv MS0wKwYDVQQDEyQ5NDBhMWFiNi0xN2E3LTRkYTgtYTk4NC02MjJiODg1MTAzMzAw HhcNMjAwMTI2MTYwMzI0WhcNMjUwMTI0MTcwMzI0WjAvMS0wKwYDVQQDEyQ5NDBh MWFiNi0xN2E3LTRkYTgtYTk4NC02MjJiODg1MTAzMzAwggEiMA0GCSqGSIb3DQEB AQUAA4IBDwAwggEKAoIBAQClyFpd7wgVRYs/bLaQFa24jGCma23cxxjz0HkYN+ed e9+AnC3y3BxbDWkB+25UqbmGRt6BSlfxYiVyZkW1er4LhvXbSb67kOoJpzi7+TVl ccLNx3bohEfPxs7wY5WaqE6CL2eSzO9P8Tus6YGN1iT99ESUnpQZ+JppR9luYrRP WIb+dKYccW9JEmJ/DvbxSQDHiM5YPZTi5lEhC7zjvsze32VZFALCu6uXBpROkYjG jYpHvPFs0/xGVKwXI86yvZBOKg1ZxjvSe2R0S8slSWxGMEDm5CVz/MI6vo59jEh5 ksvA5RFhvq+CHbiYbBzSkS6wyb4Pop3MQeqyP118ley1AgMBAAGjIzAhMA4GA1Ud DwEB/wQEAwICBDAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQBf l+CSXXwyVK8krbrAv3IcX1z6iDS93atzRYk6AMrkQ0hsZNxalNWJCjnArIeuoUJc 2ASGfYdhQB6/zXrugLlB86F/Dj8rFpB2SebrE+WOkxOV5zorNN41lJpnf33NJNT9 SCVitbYIcamrSQHIbrW1HqUXxp8xDzd00lBOv8lch0GTt+MDHXfF14Ovjbx0Ti8J y5RvavtgACASCT4Bl1wFAQSQzBxj1vDdWj1nCqkMMPE9CKHjfUy2jqNKjlnJ9Iwo 1BIdhIcbvMsUe5DMrLj7HjwYb4W7
+```
+11. apply config: <br>
+```
 kubectl exec -it vault-0 -- vault write auth/kubernetes/config token_reviewer_jwt="$SA_JWT_TOKEN" kubernetes_host="$K8S_HOST" kubernetes_ca_cert="$SA_CA_CRT" <br>
+```
 
-
-Success! Data written to: auth/kubernetes/config <br>
-
-
-16. Создадим Permissions для путей: <br>
-
+12. create permissions for paths: <br>
+```
 kubectl exec -it vault-0 sh <br>
 
 vault policy write otus-policy - <<EOH <br>
@@ -382,111 +386,96 @@ path "otus/otus-rw/*" {  <br>
 capabilities = ["read", "create", "list", "update"]  <br>
 } <br>
 EOH <br>
+```
 
-Как воспользоваться командой kubectl cp, если выдается ошибка tar: permission deniend? <br>
-
-
-17. Создадим Роль и заодно привяжем к Permissions: <br>
-
+13. Create Role + Binding to Permissions: <br>
+```
 kubectl exec -it vault-0 -- vault write auth/kubernetes/role/otus bound_service_account_names=vault-auth bound_service_account_namespaces=default policies=otus-policy ttl=24h  <br>
+```
 
-
-Success! Data written to: auth/kubernetes/role/otus  <br>
-
-
-
-18. Проверка как работает авторизация:
-
-kubectl run --generator=run-pod/v1 tmp --rm -i --tty --serviceaccount=vault-auth --image alpine:3.7  <br>
+14. Check Access: <br>
+```
+kubectl run --generator=run-pod/v1 tmp --rm -i --tty --serviceaccount=vault-auth --image alpine:3.7
 kubectl exec -it tmp sh <br>
 
-KUBE_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token) <br>
-echo $KUBE_TOKEN <br>
-
-eyJhbGciOiJSUzI1NiIsImtpZCI6Im9IdGdyOFoxSmFSdDdKWnNtQ3d6YnVjX0FPRS1KaG9yNi1COTB5SUc5NEkifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6InZhdWx0LWF1dGgtdG9rZW4tbTV2NGMiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC5uYW1lIjoidmF1bHQtYXV0aCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6ImZlYzJjYWFjLTE4MjMtNGU2Zi05ZjkzLTM4N2ZlNGIxMzhjZiIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDpkZWZhdWx0OnZhdWx0LWF1dGgifQ.sXiJriVOaJE0DQPgU2Si4V2a2LEt98v_9xZi59XO6AvvOWfqrh7mU8y6Z4Zd0y3SXwnPyyQCrmpbKXCFhctp8xhls2rrZLJyhMpHvNXG4Zjt4yGASsTkGohc2gBsRnOypJOGIOYC4kFtaicu-drDtEMmBklL4Po6i4mZFKPFmB6C8o82fc80miLyN46cx1yQr0dQr6DtO0sveKvB42_Vl0btTRCRpkCQVwc8K386WXjuD7NAT4yTNwb2IGQNmY1RJd7Yqy4MDzm0Dpvv-w1jCVorMkezgiKaQmBGuk8-TOoq63xsr73-elE5kS_vRY47dMlszKp5SlwaeNzTOcmVdA <br>
-
+KUBE_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token) 
 VAULT_ADDR=http://vault:8200 <br>
+```
+echo $KUBE_TOKEN <br>
+```
+eyJhbGciOiJSUzI1NiIsImtpZCI6Im9IdGdyOFoxSmFSdDdKWnNtQ3d6YnVjX0FPRS1KaG9yNi1COTB5SUc5NEkifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6InZhdWx0LWF1dGgtdG9rZW4tbTV2NGMiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC5uYW1lIjoidmF1bHQtYXV0aCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6ImZlYzJjYWFjLTE4MjMtNGU2Zi05ZjkzLTM4N2ZlNGIxMzhjZiIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDpkZWZhdWx0OnZhdWx0LWF1dGgifQ.sXiJriVOaJE0DQPgU2Si4V2a2LEt98v_9xZi59XO6AvvOWfqrh7mU8y6Z4Zd0y3SXwnPyyQCrmpbKXCFhctp8xhls2rrZLJyhMpHvNXG4Zjt4yGASsTkGohc2gBsRnOypJOGIOYC4kFtaicu-drDtEMmBklL4Po6i4mZFKPFmB6C8o82fc80miLyN46cx1yQr0dQr6DtO0sveKvB42_Vl0btTRCRpkCQVwc8K386WXjuD7NAT4yTNwb2IGQNmY1RJd7Yqy4MDzm0Dpvv-w1jCVorMkezgiKaQmBGuk8-TOoq63xsr73-elE5kS_vRY47dMlszKp5SlwaeNzTOcmVdA <br>
+```
 
 curl --request POST --data '{"jwt": "'$KUBE_TOKEN'", "role": "otus"}' $VAULT_ADDR/v1/auth/kubernetes/login | jq <br>
 
-
-При POST-запросе иногда может влезти такое: <br>
-
-"errors": [ <br>
-   "permission denied" <br>
- ] <br>
- 
- Это значит, что скорее всего в конфиге vault для Kubernetes была допущена ошибка (kubectl exec -it vault-0 -- vault write auth/kubernetes/config ..) <br>
- Каждый раз когда ты пробуешь сделать запрос, даже в случае permission denied - в логах Пода vault все отражается: <br>
- kubectl logs vault-0 <br>
- 
- Если все нормально, то результат должен быть такой: <br>
-
- { <br>
-   "request_id": "7f43c927-5dc7-ae0b-3bf2-ae6cd8bb5c8e", <br>
-   "lease_id": "", <br>
-   "renewable": false, <br>
-   "lease_duration": 0, <br>
-   "data": null, <br>
-   "wrap_info": null, <br>
-   "warnings": null, <br>
-   "auth": { <br>
-     "client_token": "s.C4lp0PCPyEOWarpr8Mi8BZVU", <br>
-     "accessor": "VWAprvHII4myh7HmLpdgMxu0", <br>
-     "policies": [ <br>
-       "default", <br>
-       "otus-policy" <br>
-     ], <br>
-     "token_policies": [ <br>
-       "default", <br>
-       "otus-policy" <br>
-     ], <br>
-     "metadata": { <br>
-       "role": "otus", <br>
-       "service_account_name": "vault-auth", <br>
-       "service_account_namespace": "default", <br>
-       "service_account_secret_name": "vault-auth-token-m5v4c", <br>
-       "service_account_uid": "fec2caac-1823-4e6f-9f93-387fe4b138cf" <br>
+```
+ { 
+   "request_id": "7f43c927-5dc7-ae0b-3bf2-ae6cd8bb5c8e", 
+   "lease_id": "", 
+   "renewable": false, 
+   "lease_duration": 0,
+   "data": null,
+   "wrap_info": null, 
+   "warnings": null, 
+   "auth": { 
+     "client_token": "s.C4lp0PCPyEOWarpr8Mi8BZVU", 
+     "accessor": "VWAprvHII4myh7HmLpdgMxu0",
+     "policies": [ 
+       "default", 
+       "otus-policy" 
+     ], 
+     "token_policies": [ 
+       "default", 
+       "otus-policy" 
+     ], 
+     "metadata": { 
+       "role": "otus", 
+       "service_account_name": "vault-auth", 
+       "service_account_namespace": "default",
+       "service_account_secret_name": "vault-auth-token-m5v4c", <
+       "service_account_uid": "fec2caac-1823-4e6f-9f93-387fe4b138cf" 
      },
-     "lease_duration": 86400, <br>
-     "renewable": true, <br>
-     "entity_id": "f9bfafa1-1ba1-cf42-3023-86697d5c8d87", <br>
-     "token_type": "service", <br>
-     "orphan": true <br>
-   } <br>
- } <br>
- 
- 
- 
- Теперь может это записать в пользовательский токен: <br>
-
+     "lease_duration": 86400, 
+     "renewable": true, 
+     "entity_id": "f9bfafa1-1ba1-cf42-3023-86697d5c8d87", 
+     "token_type": "service", 
+     "orphan": true 
+   } 
+ }
+ ```
+  ```
 TOKEN=$(curl -k -s --request POST --data '{"jwt": "'$KUBE_TOKEN'", "role": "otus"}' $VAULT_ADDR/v1/auth/kubernetes/login | jq '.auth.client_token' | awk -F\" '{print $2}') <br>
+ ```
  
 echo $TOKEN <br>
+
+ ```
 s.WzgeqK2u31sPkXaPL1B7D8B2 <br>
+ ```
 
-
-19. Проверим чтение с помощью выданного токена:  <br>
-
+Read:  <br>
+ ```
 curl --header "X-Vault-Token:s.WzgeqK2u31sPkXaPL1B7D8B2" $VAULT_ADDR/v1/otus/otus-ro/config <br>
-
+ ```
+ ouput:
+  ```
 {«request_id":"0b8c736e-9169-72fc-0cf3-47bf01f3b899","lease_id":"","renewable":false,"lease_duration":2764800,"data" :{"password":"asajkjkahs","username":"otus"},"wrap_info":null,"warnings":null,"auth":null} <br>
-
-
+ ```
+ ```
 curl --header "X-Vault-Token:s.WzgeqK2u31sPkXaPL1B7D8B2" $VAULT_ADDR/v1/otus/otus-rw/config <br>
-
+ ```
+  ouput:
+  ```
 {«request_id":"30be62dd-6641-2234-8da9-acb46c5bedaa","lease_id":"","renewable":false,"lease_duration":2764800,"data":{"password":"asajkjkahs","username":"otus"},"wrap_info":null,"warnings":null,"auth":null} <br>
-
-
-Где прочитать логи в случае неудачной попытки записи? <br>
-
-
-20. Проверим запись: <br>
-
+ ```
+Write: <br>
+ ```
 curl --request POST --data '{"bar": "baz"}' --header "X-Vault-Token:s.yIzuW9ACWaK1V0JlR2dpoeQ9" $VAULT_ADDR/v1/otus/otus-ro/config <br>
-
+ ```
+ouput:
+```
 {«request_id":"a751195a-46c9-8bde-ecaa-2ce70307b970","lease_id":"","renewable":false,"lease_duration":2764800,"data":{"bar":"baz"},"wrap_info":null,"warnings":null,"auth":null} <br>
-
+ ```
 
 21. Use case использования авторизации через кубер: <br>
 
