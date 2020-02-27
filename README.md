@@ -508,23 +508,95 @@ kubectl create configmap example-vault-agent-config --from-file=./configs-k8s/
 ```
 kubectl apply -f example-k8s-spec.yml --record
 ```
-7.forward for checking:
+7. forward for checking:
 ```
 kubectl port-forward pod/vault-agent-example 8080:80
 ```
 *output*
 ![Image of Yaktocat](https://github.com/otus-kuber-2019-12/sim-repo_platform/blob/kubernetes-vault/images/vault-nginx.png)
                                  
+![Test Image 4](https://github.com/tograh/testrepository/3DTest.png)
 
 
 
+<H3>Creating Intermediate CA</H3>
+
+Суть: избавиться от ручной генерации private key + csr для получения сертификата. Плюс поддержка ЖЦ сертификата через TTL. <br>
+*source: https://www.vaultproject.io/docs/secrets/pki/index.html* <br><br>
+1. Create Root CA 
+
+enable PKI secrets engine + Set TTL:
+```
+kubectl exec -it vault-0 -- vault secrets enable pki
+kubectl exec -it vault-0 -- vault secrets tune -max-lease-ttl=8760h pki
+```
+generate root cert:
+```
+kubectl exec -it vault-0 -- vault write -field=certificate pki/root/generate/internal common_name="exmaple.ru" ttl=87600h > CA_cert.crt
+```
+update CRL-location + issuing certs:
+```
+kubectl exec -it vault-0 -- vault write pki/config/urls  issuing_certificates="http://vault:8200/v1/pki/ca"  crl_distribution_points="http://vault:8200/v1/pki/crl"
+```
+create role *example-dot-com* + binding to *my-website.com* :
+```
+kubectl exec -it vault-0 -- vault write pki/roles/example-dot-com 
+allowed_domains=my-website.com
+allow_subdomains=true
+max_ttl=72h
+```
+create new credentials for *example-dot-com*:
+```
+kubectl exec -it vault-0 -- vault write pki/issue/example-dot-com common_name=www.my-website.com
+```
 
 
+2. Create Intermediate CA <br>
 
- 
+create intermediate pki engine + TTL<br>
+```
+kubectl exec -it vault-0 -- vault secrets enable --path=pki_int pki
+kubectl exec -it vault-0 -- vault secrets tune -max-lease-ttl=87600h pki_int
+```
+generate scr:
+```
+kubectl exec -it vault-0 -- vault write -format=json pki_int/intermediate/generate/internal common_name="example.ru Intermediate Authority" | jq -r '.data.csr' > pki_intermediate.csr
+```
+generate cert:
 
-
-
+```
+kubectl cp pki_intermediate.csr vault-0:./home/vault/pki_intermediate
+kubectl exec -it vault-0 -- vault write -format=json pki/root/sign-intermediate csr=@/home/vault/pki_intermediate.csr \ format=pem_bundle ttl="43800h" | jq -r '.data.certificate' > intermediate.cert.pem
+```
+intermediate set signed:
+```
+kubectl cp intermediate.cert.pem vault-0:./home/vault/intermediate.cert.pem
+kubectl exec -it vault-0 -- vault write pki_int/intermediate/set-signed certificate=@/home/vault/intermediate.cert.pem
+```
+create role *example-dot-com*
+```
+kubectl exec -it vault-0 -- vault write pki_int/roles/example-dot-com allowed_domains=example.com allow_subdomains=true max_ttl=72h
+```
+create intermediate cert:
+```
+kubectl exec -it vault-0 -- vault write pki_int/issue/example-dot-com common_name=blah.example.com
+```
+*output*
+```
+private_key_type    rsa
+serial_number       6b:76:44:82:06:8a:56:0b:77:96:cb:48:8e:e0:3a:d0:33:9e:5a:aa
+```
+revoke intermediate cert:
+```
+kubectl exec -it vault-0 -- vault write pki_int/revoke serial_number="6b:76:44:82:06:8a:56:0b:77:96:cb:48:8e:e0:3a:d0:33:9e:5a:aa"
+```
+*output*
+```
+Key                        Value
+---                        -----
+revocation_time            1582817515
+revocation_time_rfc3339    2020-02-27T15:31:55.594221307Z
+```
 
 
 
