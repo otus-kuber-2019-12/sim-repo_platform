@@ -236,46 +236,49 @@ helm upgrade --install promtail loki/promtail --set «loki.serviceName=loki» --
 18. Модифицировать Prometheus Operator таким образом, чтобы datasource Loki создавался сразу после установки оператора: prometheus-operator.values.yaml <br> 
 19. Настройка Grafana дашборда: ngnix-ingress.json <br>
 
+
 <H2>Kubernetes Vault</H2>
 
+<H3>Minikube Installation</H3>
+
 1. Использовал: Helm2 RBAC - tiller-account-rbac.yaml + Minikube<br>
-2. Consul install: <br>
+2. Consul install: 
 ```
    helm-consul-values.yml
    helm install --name consul --values helm-consul-values.yml https://github.com/hashicorp/consul-helm/archive/v0.15.0.tar.gz
 ```
-3. Vault install: <br>
+3. Vault install: 
 ```
     helm install --name vault https://github.com/hashicorp/vault-helm/archive/v0.3.0.tar.gz
 ```
-4. Vault config seal: <br>
+4. Vault config seal: 
 ```
     kubectl exec -it vault-0 -- /bin/sh
     kubectl exec -it vault-0 -- vault operator init --key-shares=1 --key-threshold=1
 ```
-output:  <br>
+*output:*
 ```
 Unseal Key 1: qsB9Wbb4zlGm7v4VSQx3SlpkOc5y/DBNVxeteFO9pNc=
 Initial Root Token: s.1Z6xpW4V2kiM6kXDU5vSBPka
 ```
            
-5. Vault seal check: <br>
+5. Vault seal check: 
 ```
 kubectl exec -it vault-0 -- vault status
 ```
-output:  <br>
+*output:*
 ```
 ..
 Sealed  true
 ..
 ```
 
-5. Vault unseal + login: <br>
+5. Vault unseal + login: 
 ```
 vault operator unseal qsB9Wbb4zlGm7v4VSQx3SlpkOc5y/DBNVxeteFO9pNc=
 vault login s.1Z6xpW4V2kiM6kXDU5vSBPka
 ```
-output:  <br>
+*output:*
 ```
 Key                  Value
 ---                  ----- 
@@ -289,20 +292,20 @@ policies             [«root"]
 ```
 
 
-6. Add secrets: <br>
+6. Add secrets: 
 ```
 kubectl exec -it vault-0 -- vault secrets enable --path=otus kv 
 kubectl exec -it vault-0 -- vault kv put otus/otus-ro/config username='otus' password='asajkjkahs' 
 kubectl exec -it vault-0 -- vault kv put otus/otus-rw/config username='otus' password='asajkjkahs'  
 ```
 
-7. Check: <br>
+7. Check: 
 ```
 kubectl exec -it vault-0 -- vault read otus/otus-ro/config 
 kubectl exec -it vault-0 -- vault kv get otus/otus-rw/config 
 ```
 
-output:  <br>
+*output:*  
 ```
 Key                 Value 
 ---                 ----- 
@@ -311,12 +314,12 @@ password            asajkjkahs
 username            otus 
 ```
 
-8. Enable k8s-auth: <br>
+8. Enable k8s-auth: 
 ```
 kubectl exec -it vault-0 -- vault auth enable kubernetes
 kubectl exec -it vault-0 -- vault auth list
 ```
-output:  <br>
+*output:* 
 ```
 Path           Type          Accessor                    Description
 ----           ----          --------                    -----------
@@ -324,13 +327,13 @@ kubernetes/    kubernetes    auth_kubernetes_e03cf9ad    n/a
 token/         token         auth_token_06d49d56         token based credentials
 ```
 
-9. create RBAC for vault-auth: <br>
+9. create RBAC for vault-auth: 
 
 ```
 kubectl create serviceaccount vault-auth 
 ```
 
-vault-auth-service-account.yml <br>
+vault-auth-service-account.yml 
 
 ```
 apiVersion: rbac.authorization.k8s.io/v1beta1 
@@ -348,52 +351,52 @@ subjects:
 ```
 
 
-10. Set environments for K8S Vault-auth: <br>
+10. Set environments for K8S Vault-auth: 
 ```
 export VAULT_SA_NAME=$(kubectl get sa vault-auth -o jsonpath="{.secrets[*]['name']}")
 export SA_JWT_TOKEN=$(kubectl get secret $VAULT_SA_NAME -o jsonpath="{.data.token}" | base64 --decode; echo)
 export SA_CA_CRT=$(kubectl get secret $VAULT_SA_NAME -o jsonpath="{.data['ca\.crt']}" | base64 --decode; echo)
 export K8S_HOST=$(more ~/.kube/config | grep server |awk '/http/ {print $NF}') 
 ```
-echo $VAULT_SA_NAME 
+*echo $VAULT_SA_NAME*
 ```
 vault-auth-token-m5v4c
 ```
-echo $SA_JWT_TOKEN<br>
+*echo $SA_JWT_TOKEN*
 
 ```
 eyJhbGciOiJSUzI1NiIsImtpZCI6Im9IdGdyOFoxSmFSdDdKWnNtQ3d6YnVjX0FPRS1KaG9yNi1COTB5SUc5NEkifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6InZhdWx0LWF1dGgtdG9rZW4tbTV2NGMiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC5uYW1lIjoidmF1bHQtYXV0aCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6ImZlYzJjYWFjLTE4MjMtNGU2Zi05ZjkzLTM4N2ZlNGIxMzhjZiIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDpkZWZhdWx0OnZhdWx0LWF1dGgifQ.sXiJriVOaJE0DQPgU2Si4V2a2LEt98v_9xZi59XO6AvvOWfqrh7mU8y6Z4Zd0y3SXwnPyyQCrmpbKXCFhctp8xhls2rrZLJyhMpHvNXG4Zjt4yGASsTkGohc2gBsRnOypJOGIOYC4kFtaicu-drDtEMmBklL4Po6i4mZFKPFmB6C8o82fc80miLyN46cx1yQr0dQr6DtO0sveKvB42_Vl0btTRCRpkCQVwc8K386WXjuD7NAT4yTNwb2IGQNmY1RJd7Yqy4MDzm0Dpvv-w1jCVorMkezgiKaQmBGuk8-TOoq63xsr73-elE5kS_vRY47dMlszKp5SlwaeNzTOcmVdA
 ```
-echo $SA_CA_CRT <br>
+*echo $SA_CA_CRT*
 ```
 -----BEGIN CERTIFICATE----- MIIDCzCCAfOgAwIBAgIQZDI5+F+Of+BcbPfkdsUYDjANBgkqhkiG9w0BAQsFADAv MS0wKwYDVQQDEyQ5NDBhMWFiNi0xN2E3LTRkYTgtYTk4NC02MjJiODg1MTAzMzAw HhcNMjAwMTI2MTYwMzI0WhcNMjUwMTI0MTcwMzI0WjAvMS0wKwYDVQQDEyQ5NDBh MWFiNi0xN2E3LTRkYTgtYTk4NC02MjJiODg1MTAzMzAwggEiMA0GCSqGSIb3DQEB AQUAA4IBDwAwggEKAoIBAQClyFpd7wgVRYs/bLaQFa24jGCma23cxxjz0HkYN+ed e9+AnC3y3BxbDWkB+25UqbmGRt6BSlfxYiVyZkW1er4LhvXbSb67kOoJpzi7+TVl ccLNx3bohEfPxs7wY5WaqE6CL2eSzO9P8Tus6YGN1iT99ESUnpQZ+JppR9luYrRP WIb+dKYccW9JEmJ/DvbxSQDHiM5YPZTi5lEhC7zjvsze32VZFALCu6uXBpROkYjG jYpHvPFs0/xGVKwXI86yvZBOKg1ZxjvSe2R0S8slSWxGMEDm5CVz/MI6vo59jEh5 ksvA5RFhvq+CHbiYbBzSkS6wyb4Pop3MQeqyP118ley1AgMBAAGjIzAhMA4GA1Ud DwEB/wQEAwICBDAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQBf l+CSXXwyVK8krbrAv3IcX1z6iDS93atzRYk6AMrkQ0hsZNxalNWJCjnArIeuoUJc 2ASGfYdhQB6/zXrugLlB86F/Dj8rFpB2SebrE+WOkxOV5zorNN41lJpnf33NJNT9 SCVitbYIcamrSQHIbrW1HqUXxp8xDzd00lBOv8lch0GTt+MDHXfF14Ovjbx0Ti8J y5RvavtgACASCT4Bl1wFAQSQzBxj1vDdWj1nCqkMMPE9CKHjfUy2jqNKjlnJ9Iwo 1BIdhIcbvMsUe5DMrLj7HjwYb4W7
 ```
-11. apply config: <br>
+11. apply config: 
 ```
 kubectl exec -it vault-0 -- vault write auth/kubernetes/config token_reviewer_jwt="$SA_JWT_TOKEN" kubernetes_host="$K8S_HOST" kubernetes_ca_cert="$SA_CA_CRT" <br>
 ```
 
-12. create permissions for paths: <br>
+12. create permissions for paths: 
 ```
-kubectl exec -it vault-0 sh <br>
+kubectl exec -it vault-0 sh 
 
-vault policy write otus-policy - <<EOH <br>
+vault policy write otus-policy - <<EOH 
 
-path "otus/otus-ro/*" {  <br>
-capabilities = ["read", "list"]  <br>
-}  <br>
-path "otus/otus-rw/*" {  <br>
-capabilities = ["read", "create", "list", "update"]  <br>
-} <br>
-EOH <br>
-```
-
-13. Create Role + Binding to Permissions: <br>
-```
-kubectl exec -it vault-0 -- vault write auth/kubernetes/role/otus bound_service_account_names=vault-auth bound_service_account_namespaces=default policies=otus-policy ttl=24h  <br>
+path "otus/otus-ro/*" {  
+capabilities = ["read", "list"]  
+}  
+path "otus/otus-rw/*" {  
+capabilities = ["read", "create", "list", "update"]  
+} 
+EOH 
 ```
 
-14. Check Access: <br>
+13. Create Role + Binding to Permissions: 
+```
+kubectl exec -it vault-0 -- vault write auth/kubernetes/role/otus bound_service_account_names=vault-auth bound_service_account_namespaces=default policies=otus-policy ttl=24h  
+```
+
+14. Check Access: 
 ```
 kubectl run --generator=run-pod/v1 tmp --rm -i --tty --serviceaccount=vault-auth --image alpine:3.7
 kubectl exec -it tmp sh <br>
@@ -401,7 +404,7 @@ kubectl exec -it tmp sh <br>
 KUBE_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token) 
 VAULT_ADDR=http://vault:8200 <br>
 ```
-echo $KUBE_TOKEN <br>
+*echo $KUBE_TOKEN* 
 ```
 eyJhbGciOiJSUzI1NiIsImtpZCI6Im9IdGdyOFoxSmFSdDdKWnNtQ3d6YnVjX0FPRS1KaG9yNi1COTB5SUc5NEkifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6InZhdWx0LWF1dGgtdG9rZW4tbTV2NGMiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC5uYW1lIjoidmF1bHQtYXV0aCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6ImZlYzJjYWFjLTE4MjMtNGU2Zi05ZjkzLTM4N2ZlNGIxMzhjZiIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDpkZWZhdWx0OnZhdWx0LWF1dGgifQ.sXiJriVOaJE0DQPgU2Si4V2a2LEt98v_9xZi59XO6AvvOWfqrh7mU8y6Z4Zd0y3SXwnPyyQCrmpbKXCFhctp8xhls2rrZLJyhMpHvNXG4Zjt4yGASsTkGohc2gBsRnOypJOGIOYC4kFtaicu-drDtEMmBklL4Po6i4mZFKPFmB6C8o82fc80miLyN46cx1yQr0dQr6DtO0sveKvB42_Vl0btTRCRpkCQVwc8K386WXjuD7NAT4yTNwb2IGQNmY1RJd7Yqy4MDzm0Dpvv-w1jCVorMkezgiKaQmBGuk8-TOoq63xsr73-elE5kS_vRY47dMlszKp5SlwaeNzTOcmVdA <br>
 ```
@@ -432,7 +435,7 @@ curl --request POST --data '{"jwt": "'$KUBE_TOKEN'", "role": "otus"}' $VAULT_ADD
        "role": "otus", 
        "service_account_name": "vault-auth", 
        "service_account_namespace": "default",
-       "service_account_secret_name": "vault-auth-token-m5v4c", <
+       "service_account_secret_name": "vault-auth-token-m5v4c", 
        "service_account_uid": "fec2caac-1823-4e6f-9f93-387fe4b138cf" 
      },
      "lease_duration": 86400, 
@@ -447,52 +450,70 @@ curl --request POST --data '{"jwt": "'$KUBE_TOKEN'", "role": "otus"}' $VAULT_ADD
 TOKEN=$(curl -k -s --request POST --data '{"jwt": "'$KUBE_TOKEN'", "role": "otus"}' $VAULT_ADDR/v1/auth/kubernetes/login | jq '.auth.client_token' | awk -F\" '{print $2}') <br>
  ```
  
-echo $TOKEN <br>
+*echo $TOKEN* 
 
  ```
 s.WzgeqK2u31sPkXaPL1B7D8B2 <br>
  ```
 
-Read:  <br>
+Read:  
  ```
-curl --header "X-Vault-Token:s.WzgeqK2u31sPkXaPL1B7D8B2" $VAULT_ADDR/v1/otus/otus-ro/config <br>
+curl --header "X-Vault-Token:s.WzgeqK2u31sPkXaPL1B7D8B2" $VAULT_ADDR/v1/otus/otus-ro/config 
  ```
- ouput:
+ *ouput:*
   ```
-{«request_id":"0b8c736e-9169-72fc-0cf3-47bf01f3b899","lease_id":"","renewable":false,"lease_duration":2764800,"data" :{"password":"asajkjkahs","username":"otus"},"wrap_info":null,"warnings":null,"auth":null} <br>
+{«request_id":"0b8c736e-9169-72fc-0cf3-47bf01f3b899","lease_id":"","renewable":false,"lease_duration":2764800,"data" :{"password":"asajkjkahs","username":"otus"},"wrap_info":null,"warnings":null,"auth":null} 
  ```
  ```
-curl --header "X-Vault-Token:s.WzgeqK2u31sPkXaPL1B7D8B2" $VAULT_ADDR/v1/otus/otus-rw/config <br>
+curl --header "X-Vault-Token:s.WzgeqK2u31sPkXaPL1B7D8B2" $VAULT_ADDR/v1/otus/otus-rw/config 
  ```
-  ouput:
+  *ouput:*
   ```
-{«request_id":"30be62dd-6641-2234-8da9-acb46c5bedaa","lease_id":"","renewable":false,"lease_duration":2764800,"data":{"password":"asajkjkahs","username":"otus"},"wrap_info":null,"warnings":null,"auth":null} <br>
+{«request_id":"30be62dd-6641-2234-8da9-acb46c5bedaa","lease_id":"","renewable":false,"lease_duration":2764800,"data":{"password":"asajkjkahs","username":"otus"},"wrap_info":null,"warnings":null,"auth":null} 
  ```
-Write: <br>
+Write: 
  ```
-curl --request POST --data '{"bar": "baz"}' --header "X-Vault-Token:s.yIzuW9ACWaK1V0JlR2dpoeQ9" $VAULT_ADDR/v1/otus/otus-ro/config <br>
+curl --request POST --data '{"bar": "baz"}' --header "X-Vault-Token:s.yIzuW9ACWaK1V0JlR2dpoeQ9" $VAULT_ADDR/v1/otus/otus-ro/config 
  ```
-ouput:
+*ouput:*
 ```
-{«request_id":"a751195a-46c9-8bde-ecaa-2ce70307b970","lease_id":"","renewable":false,"lease_duration":2764800,"data":{"bar":"baz"},"wrap_info":null,"warnings":null,"auth":null} <br>
+{«request_id":"a751195a-46c9-8bde-ecaa-2ce70307b970","lease_id":"","renewable":false,"lease_duration":2764800,"data":{"bar":"baz"},"wrap_info":null,"warnings":null,"auth":null} 
  ```
 
-21. Use case использования авторизации через кубер: <br>
 
-Суть состоит в том, чтобы nginx получал секреты из волта, не зная ничего про волт. <br>
-git clone https://github.com/hashicorp/vault-guides.git <br>
+<H3>Vault Agent</H3>
 
-В каталоге identity/vault-agent-k8s-demo нужно: <br>
-Заменить в vault-agent-config.hcl auto_auth.config.role на свою <br>
-Дальше применить оба hcl-файла как configmap <br>
+1. git clone https://github.com/hashicorp/vault-guides.git
+2.  cd identity/vault-agent-k8s-demo
+3. set vault-agent-config.hcl 
+   ```
+   config = {
+       role = "otus"
+   }
+   ```
+ 
+ 4. set localhost in example-k8s-spec.yaml (line 43, 74):   
 ```
-kubectl create configmap example-vault-agent-config —from-file=./configs-k8s/ <br>
-
-kubectl apply -f example-k8s-spec.yml —record <br>
+  http://vault:8200 or http://127.0.0.1:8200  
 ```
-
-
-
+*Дополнительно можно проверить env:* 
+```
+kubectl exec -it vault-0 env | grep VAULT
+```
+5. create ConfigMap for value-agent-example app deploying:
+```
+kubectl create configmap example-vault-agent-config --from-file=./configs-k8s/
+```
+6. run example-app:
+```
+kubectl apply -f example-k8s-spec.yml --record
+```
+7.forward for checking:
+```
+kubectl port-forward pod/vault-agent-example 8080:80
+```
+*output*
+![Image of Yaktocat](https://github.com/otus-kuber-2019-12/sim-repo_platform/images/vault-nginx.png)
 
 
 
