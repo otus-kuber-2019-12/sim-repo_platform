@@ -237,86 +237,56 @@ helm upgrade --install promtail loki/promtail --set «loki.serviceName=loki» --
 19. Настройка Grafana дашборда: ngnix-ingress.json <br>
 
 <H2>Kubernetes Vault</H2>
-1. Использовал Helm2: RBAC - tiller-account-rbac.yaml <br>
-2. Cклонируем репозиторий consul <br>
-           git clone https://github.com/hashicorp/consul-helm.git <br>
-           helm install --name=consul consul-helm <br>
-3. Также репо Vault: <br>
-           git clone https://github.com/hashicorp/vault-helm.git <br>
-4. Отредактируем параметры установки в values.yaml<br>
-    Подключим HA+UI, выключим Standalone<br>
-    tandalone:  <br>
-        enabled: false  <br>
-        ....  <br>
-    ha:   <br>
-        enabled: true  <br>
-        ...  <br>
-    ui:  <br>
-        enabled: true  <br>
-        serviceType: "ClusterIP" <br>
-5. Установим Vault: <br>
-    helm install --name=vault . <br>
 
-Команда helm status vault покажет все объекты, установленные через helm: <br>
-helm status vault<br>
-
-Посмотрим логи Vault-подов: <br>
-Будет выведено нечто подобное: <br>
-core: seal configuration missing, not initialized <br>
-
-
-6.Vault требует инициализации, связанной с установкой печати: <br>
-
-kubectl exec -it vault-0 -- vault operator init --key-shares=1 --key-threshold=1 <br>
-
-Результат:  <br>
-
-Unseal Key 1: Scl5kDhBCyf58CRC7PjmL+7pzgkYPuYiWo67yrdxDdw= <br>
-
-Initial Root Token: s.3virBMHFxbd4z02OKMbW1bPq <br>
-
+1. Использовал: Helm2 RBAC - tiller-account-rbac.yaml + Minikube<br>
+2. Consul install: <br>
+```
+   helm-consul-values.yml
+   helm install --name consul --values helm-consul-values.yml https://github.com/hashicorp/consul-helm/archive/v0.15.0.tar.gz
+```
+3. Vault install: <br>
+```
+    helm install --name vault https://github.com/hashicorp/vault-helm/archive/v0.3.0.tar.gz
+```
+4. Vault config seal: <br>
+```
+    kubectl exec -it vault-0 -- /bin/sh
+    kubectl exec -it vault-0 -- vault operator init --key-shares=1 --key-threshold=1
+```
+output:  <br>
+```
+Unseal Key 1: qsB9Wbb4zlGm7v4VSQx3SlpkOc5y/DBNVxeteFO9pNc=
+Initial Root Token: s.1Z6xpW4V2kiM6kXDU5vSBPka
+```
            
-7. Проверим: <br>
+5. Vault seal check: <br>
+```
+kubectl exec -it vault-0 -- vault status
+```
+output:  <br>
+```
+..
+Sealed  true
+..
+```
 
-kubectl exec -it vault-0 -- vault status <br>
-
-.. <br>
-Sealed             true <br>
-.. <br>
-
-8. Теперь, чтобы vault мог получить доступ к decryption key для декодерования зашифрованных данных в consul нужно распечатать каждый Vault под: <br>
-
-kubectl exec -it vault-0 -- vault operator unseal <br>
-
-Будет выведен stdin promt на ввод печати, выданный на шаге 6 <br>
-
-После ввода unsealed-key консоле выводится сообщение: <br>
-Sealed   false <br>
-
-Ту же операцию нужно проделать с каждым Vault-подом: <br>
-kubectl exec -it vault-1 -- vault operator unseal <br>
-kubectl exec -it vault-2 -- vault operator unseal <br>
-
-
-9.Залогинимся: <br>
-
-kubectl exec -it vault-0 -- vault login <br>
-
-
-Success! You are now authenticated. The token information displayed below <br>
-is already stored in the token helper. You do NOT need to run "vault login" <br>
-again. Future Vault requests will automatically use this token. <br>
-
-Key                  Value <br>
----                  ----- <br>
-token                s.3virBMHFxbd4z02OKMbW1bPq <br>
-token_accessor       enaw11WLLiaagGLj2lY9zLgQ <br>
-token_duration       ∞ <br>
-token_renewable      false <br>
-token_policies       ["root"] <br>
-identity_policies    [] <br>
-policies             [«root"] <br>
-
+5. Vault unseal + login: <br>
+```
+vault operator unseal qsB9Wbb4zlGm7v4VSQx3SlpkOc5y/DBNVxeteFO9pNc=
+vault login s.1Z6xpW4V2kiM6kXDU5vSBPka
+```
+output:  <br>
+```
+Key                  Value
+---                  ----- 
+token                s.3virBMHFxbd4z02OKMbW1bPq 
+token_accessor       enaw11WLLiaagGLj2lY9zLgQ
+token_duration       ∞ 
+token_renewable      false 
+token_policies       ["root"]
+identity_policies    [] 
+policies             [«root"]
+```
 
 
 10. Добавим секреты: <br>
