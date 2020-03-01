@@ -653,9 +653,9 @@ server accepts handled requests
 Reading: 0 Writing: 1 Waiting: 0 
 ```
 *output*
-![Image of Yaktocat](https://github.com/otus-kuber-2019-12/sim-repo_platform/images/vault-tls2.png)
+![Image of Yaktocat](https://github.com/otus-kuber-2019-12/sim-repo_platform/blob/kubernetes-vault/images/vault-tls2.png)
  
-![Image of Yaktocat](https://github.com/otus-kuber-2019-12/sim-repo_platform/images/vault-tls3.png)
+![Image of Yaktocat](https://github.com/otus-kuber-2019-12/sim-repo_platform/blob/kubernetes-vault/images/vault-tls3.png)
 
-![Image of Yaktocat](https://github.com/otus-kuber-2019-12/sim-repo_platform/images/vault-tls4.png)
+![Image of Yaktocat](https://github.com/otus-kuber-2019-12/sim-repo_platform/blob/kubernetes-vault/images/vault-tls4.png)
 
