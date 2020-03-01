@@ -239,7 +239,7 @@ helm upgrade --install promtail loki/promtail --set «loki.serviceName=loki» --
 
 <H2>Kubernetes Vault</H2>
 
-<H3>Minikube Installation</H3>
+<H3>Base Installation</H3>
 
 1. Использовал: Helm2 RBAC - tiller-account-rbac.yaml + Minikube<br>
 2. Consul install: 
@@ -514,10 +514,7 @@ kubectl port-forward pod/vault-agent-example 8080:80
 ```
 *output*
 ![Image of Yaktocat](https://github.com/otus-kuber-2019-12/sim-repo_platform/blob/kubernetes-vault/images/vault-nginx.png)
-                                 
-![Test Image 4](https://github.com/tograh/testrepository/3DTest.png)
-
-
+ 
 
 <H3>Creating Intermediate CA</H3>
 
@@ -599,12 +596,66 @@ revocation_time_rfc3339    2020-02-27T15:31:55.594221307Z
 ```
 
 
+<H3>Enable TLS</H3>
+
+vault values:
+
+```
+tlsDisable: false
+...
+extraEnvironmentVars:
+    VAULT_ADDR: https://127.0.0.1:8200
+    VAULT_CACERT: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
 
 
+ extraVolumes:
+      - type: secret
+        name: vault-server-tls # должен совпадать с $SECRET_NAME
+        path: null # /vault/userconfig
 
 
+ha:
+    enabled: true
+    replicas: 1
+config: |
+      ui = true
 
+      listener "tcp" {
+        tls_disable = 0
+        address = "[::]:8200"
+        cluster_address = "[::]:8201"
+        tls_cert_file = "/vault/userconfig/vault-server-tls/vault.crt"
+        tls_key_file  = "/vault/userconfig/vault-server-tls/vault.key"
+      }
+      storage "consul" {
+        path = "vault"
+        address = "HOST_IP:8500"
+      }
+```
 
+<H3>Dynamic Secrets</H3>
 
+workspace: ./nginx/
 
+```
+    - nginx.conf 
+    - Dockerfile
+    - nginx-deployment.yml 
+    - patch-nginx.yml
+```
+
+curl -k https://$(minikube ip):32453/basic_status
+
+```
+Active connections: 1 
+server accepts handled requests
+ 11 11 9 
+Reading: 0 Writing: 1 Waiting: 0 
+```
+*output*
+![Image of Yaktocat](https://github.com/otus-kuber-2019-12/sim-repo_platform/images/vault-tls2.png)
+ 
+![Image of Yaktocat](https://github.com/otus-kuber-2019-12/sim-repo_platform/images/vault-tls3.png)
+
+![Image of Yaktocat](https://github.com/otus-kuber-2019-12/sim-repo_platform/images/vault-tls4.png)
 

@@ -1,0 +1,19 @@
+spec:
+    template:
+      metadata:
+        annotations:
+          vault.hashicorp.com/agent-inject: "true"
+          vault.hashicorp.com/agent-inject-status: "update"
+          vault.hashicorp.com/role: "example-com-issuer"
+          vault.hashicorp.com/agent-inject-secret-server.cert: "pki_int/issue/example-com-issuer"
+          vault.hashicorp.com/agent-inject-template-server.cert: |
+            {{- with secret "pki_int/issue/example-com-issuer" "common_name=blah.example.com" -}}
+            {{ .Data.certificate }}
+            {{- end }}
+          vault.hashicorp.com/agent-inject-secret-server.key: "pki_int/issue/example-com-issuer"
+          vault.hashicorp.com/agent-inject-template-server.key: |
+            {{- with secret "pki_int/issue/example-com-issuer" "common_name=blah.example.com" -}}
+            {{ .Data.private_key }}
+            {{- end }}
+          vault.hashicorp.com/tls-skip-verify: "true"
+          vault.hashicorp.com/service: "https://vault:8200"
