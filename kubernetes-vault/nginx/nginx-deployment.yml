@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-demo
+  labels:
+    app: nginx-demo
+spec:
+  selector:
+    matchLabels:
+      app: nginx-demo
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+      labels:
+        app: nginx-demo
+    spec:
+      serviceAccountName: vault-sa
+      containers:
+      - name: nginx-demo
+        image: neogeowild/otus_vault_nginx
+        ports:
+          - containerPort: 443
+            name: https
