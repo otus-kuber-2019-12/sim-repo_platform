@@ -85,10 +85,15 @@
   - namespaces
   - микросервисы 
 ```
+![Image of Yaktocat](https://github.com/otus-kuber-2019-12/sim-repo_platform/blob/kubernetes-ci/cd/images/cicd-dep.png)
+
+
 
 <H3>Интеграционное тестирование: </H3>
 
  наряду с остальным также поднимается ingress ( с именем "ingress") <br>
+
+ ![Image of Yaktocat](https://github.com/otus-kuber-2019-12/sim-repo_platform/blob/kubernetes-ci/cd/images/cicd-svc.png)
  
  из браузера вызов клиентского приложения "app": 
  ```
@@ -99,5 +104,11 @@
   - http://<ingress ip>api/values/current <br>
   - http://<ingress ip>api/values/all <br>
 ```
+
+![Image of Yaktocat](https://github.com/otus-kuber-2019-12/sim-repo_platform/blob/kubernetes-ci/cd/images/cicd-client.png)
+
+ 
+
+
 
 
