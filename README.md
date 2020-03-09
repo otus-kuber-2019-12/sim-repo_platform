@@ -659,3 +659,14 @@ Reading: 0 Writing: 1 Waiting: 0
 
 ![Image of Yaktocat](https://github.com/otus-kuber-2019-12/sim-repo_platform/blob/kubernetes-vault/images/vault-tls4.png)
 
+
+
+<H2>Kubernetes-CI/CD</H2>
+
+Пример реализации CI/CD на Gitlab + Kubernetes для микросервисного приложения<br>
+Директория:
+```
+  ./kubernetes-ci/cd
+```
+
+
