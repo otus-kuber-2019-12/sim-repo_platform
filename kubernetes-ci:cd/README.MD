@@ -57,8 +57,18 @@
 
 ```
 1. настройть Gitlab CI/CD Kubernetes
-2. настройть Gitlab Runners: Kubernetes (tag: kuber) + Shell (tag: micro-shell) 
-3. создать repo для "app" 
+2. настройть Gitlab Runners: Kubernetes (tag: kuber) + Shell (tag: micro-shell)
+3. указать env vars:
+    $API_IMAGE: neogeowild/api:latest
+    $APP_IMAGE: neogeowild/app 
+    $DOCKER_TOKEN:  ..
+    $NGINX_IMAGE: neogeowild/nginx:latest
+    $PG_IMAGE: postgres:12-alpine
+    $REDIS_IMAGE: redis:latest
+    $TEST_DURATION_SEC: 240
+    $TMP_NAMESPACE: tmp
+    $WORKER_IMAGE: neogeowild/worker:latest
+4. создать repo для "app" 
 ```
 
 <H3>Запуск: </H3>
