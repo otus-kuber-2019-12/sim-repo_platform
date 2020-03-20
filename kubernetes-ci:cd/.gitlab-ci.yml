@@ -1,0 +1,60 @@
+
+stages:
+    - unit_test
+    - integration_test
+    - deploy
+
+.registry_common:
+    stage: build
+    before_script:
+        - echo $DOCKER_TOKEN | docker login -u neogeowild --password-stdin
+    after_script:
+        - docker logout
+    tags:
+        - micro-shell
+
+
+unit_test:
+    stage: unit_test
+    extends: .registry_common
+    script:
+        - git clone https://github.com/sim-repo/fibonacci-unit-test.git # клонируем юнит-тесты
+        - cp -r ./fibonacci-unit-test/* ./app/src
+        - git clone https://github.com/sim-repo/fibonacci-ci-cd.git # клонируем ci/cd - скрипты
+        - docker build -t $APP_IMAGE -f ./fibonacci-ci-cd/docker/Dockerfile.dev ./app
+        - docker run $APP_IMAGE npm run test -- --coverage
+        - echo $?
+    tags:
+        - micro-shell
+        
+integration_test:
+    stage: integration_test
+    image: dtzar/helm-kubectl:3.0.3
+    tags:
+        - kuber
+    before_script:
+        - git clone https://github.com/sim-repo/fibonacci-ci-cd.git # клонируем ci/cd - скрипты
+        - ./fibonacci-ci-cd/ci-chart/safety-prepare.sh $TMP_NAMESPACE # безопасно создаем namespace и очищаем старые helm-релизы
+    script:
+        - helm install cichart 
+            --set tmp_image=neogeowild/app 
+            --set tmp_namespace=$TMP_NAMESPACE 
+            --set image_postgres=$PG_IMAGE  
+            --set image_redis=$REDIS_IMAGE 
+            --set image_api=$API_IMAGE  
+            --set image_worker=$WORKER_IMAGE 
+            --set image_nginx=$NGINX_IMAGE 
+            --set image_app=$APP_IMAGE
+            ./fibonacci-ci-cd/ci-chart
+        - ./fibonacci-ci-cd/ci-chart/check-finish.sh $TEST_DURATION_SEC $TMP_NAMESPACE
+        - exit $? # гитлабу возвращаем статус выполнения скрипта
+
+
+        
+deploy:
+    stage: deploy
+    extends: .registry_common
+    script:
+        - docker push neogeowild/app:latest
+    tags:
+        - micro-shell
