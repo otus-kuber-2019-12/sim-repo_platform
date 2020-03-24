@@ -139,7 +139,7 @@ kubectl get VirtualService -n production
 
 ```
 
-<H3>Установка Flagger:/H3>
+<H3>Установка Flagger:</H3>
 
 ```
 helm repo add flagger https://flagger.app
@@ -153,13 +153,13 @@ helm upgrade -i flagger flagger/flagger \
 --set metricsServer=http://prometheus:9090
 ```
 
-<H3>Frontend для Flagger:/H3>
+<H3>Frontend для Flagger:</H3>
 
 ```
 ./flagger/frontend
 ```
 
-<H3>Flagger: Alert to Slack/H3>
+<H3>Flagger: Alert to Slack</H3>
 
 ```
 ./flagger/alert
