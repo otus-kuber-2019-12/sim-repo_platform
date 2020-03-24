@@ -3,20 +3,19 @@
 (FIF - FluxCD, Istio, Flagger)
 
 <H3>Dir: </H3>
- ```
-   ./autodeploy - авторазвертывание FIF
-   ./deploy - version control repository для FLUXCD   
-   ./flagger - Canary-ресурсы, Alerts для Flagger
-   ./flux - values для установки FluxCD
-   ./src - кодовая база HipsterShop
- ```
+
+   ./autodeploy - авторазвертывание FIF <br>
+   ./deploy - version control repository для FLUXCD   <br>
+   ./flagger - Canary-ресурсы, Alerts для Flagger<br>
+   ./flux - values для установки FluxCD<br>
+   ./src - кодовая база HipsterShop<br>
+
 
 
 <H3>Настройка Проекта: </H3>
 
- ```
  Собрать docker-образы всех микросервисов с тегом v0.0.1 и запушить в Docker Hub <br>
- ```
+
 
 <H3>Настройка Flux </H3>
 
@@ -26,7 +25,8 @@
 kubectl apply -f https://raw.githubusercontent.com/fluxcd/helm-operator/master/deploy/crds.yaml
  ```
 
-<H3>Установим Flux: </H3>
+Установим Flux:
+
  ```
 helm repo add fluxcd https://charts.fluxcd.io
 kubectl create namespace flux
@@ -34,7 +34,7 @@ helm upgrade --install flux fluxcd/flux -f ./flux/values.yml --namespace flux
 helm upgrade --install helm-operator fluxcd/helm-operator -f ./flux/operator/helm-operator.values.yaml --namespace flux
  ```
 
-<H3>Установим FluxCtl: </H3>
+Установим FluxCtl:
 
 ```
 brew install fluxctl
@@ -45,22 +45,23 @@ brew install fluxctl
 fluxctl --k8s-fwd-ns=flux list-workloads
 ```
 
-<H3>Настроим доступа flux-а к GitLab репозиторию:</H3>
+Настроим доступа flux-а к GitLab репозиторию:
 
 ```
  fluxctl identity --k8s-fwd-ns flux
 
-
  GitLab->Account->Settings->SSH Keys
 ```
 
-<H3>Проверим, что интеграция успешна прошла:</H3>
+Проверим, что интеграция успешна прошла: <br>
 
-kubectl get pods -n flux <br>
-kubectl logs flux-59bdc5d845-mt6kp -n flux --tail 1 <br>
+> kubectl get pods -n flux <br>
+> kubectl logs flux-59bdc5d845-mt6kp -n flux --tail 1 <br>
 
+output:
 ```
-ts=2020-03-17T15:04:31.372157386Z caller=images.go:17 component=sync-loop msg="polling for new images for automated workloads"
+ts=2020-03-17T15:04:31.372157386Z caller=images.go:17 
+component=sync-loop msg="polling for new images for automated workloads"
  ```
 
 <H3>Установка Istio:</H3>
@@ -71,13 +72,13 @@ cd ./istio-1.5.0
 export PATH=$PWD/bin:$PATH
 ```
 
-deploy the Istio operator:
+Ставим Istio operator:
 
 ```
 istioctl operator init
 ```
 
-<H3>Установка configuration profile:</H3>
+Ставим configuration profile:
 
 ```
 kubectl apply -f - <<EOF
@@ -94,7 +95,7 @@ EOF
 
 
 
-<H3>Установка Envoy:</H3>
+Ставим Envoy:
 
 ```
 apiVersion: v1
@@ -105,9 +106,9 @@ metadata:
  name: production
 ```
 
-<H3>После этого проверим статус Sidecar в кластере:</H3>
+Проверим статус Sidecar в кластере:
 
-kubectl get ns production --show-labels
+> kubectl get ns production --show-labels
 
 ```
 NAME         STATUS   AGE   LABELS
@@ -115,22 +116,21 @@ production   Active   81m   fluxcd.io/sync-gc-mark=sha256.FB1D6mLzJzRR_T1VrTcTV5
 
 ```
 
-<H3>“Сбросим” все поды, чтобы они пересоздались, но уже с sidecar Envoy:</H3>
+“Сбросим” все поды, чтобы они пересоздались, но уже с sidecar Envoy:
 
 ```
 kubectl delete pods --all -n production
 ```
 
 
-<H3>Настроим Frontend для Istio:</H3>
-
-Gateway+VirtualService:
+Настроим Frontend для Istio (Gateway+VirtualService):
 
 ```
 ./deploy/templates/frontend
 ```
 
-<H3>Проверим состояние frontend HelmRelease</H3>
+Проверим состояние frontend HelmRelease:
+
 ```
 kubectl get helmreleases frontend -n production
 kubectl get gateway -n production
