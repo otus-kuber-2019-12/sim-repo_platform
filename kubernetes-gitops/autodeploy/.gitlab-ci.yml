@@ -1,0 +1,34 @@
+stages:
+    - create_production
+    
+create_production:
+    only:
+      variables:
+        - $CI_COMMIT_TAG =~ /^v.*/
+    except:
+        - branches
+    #when: manual #включим, если хотим ручной запуск pipeline
+    stage: create_production
+    image: dtzar/helm-kubectl:3.0.3
+    script:
+        #- env #вывести весь список predefined env
+        #flux
+        - ./flux/bash/safety-prepare.sh flux
+        - helm repo add fluxcd https://charts.fluxcd.io
+        - helm repo update
+        - helm upgrade -i flux fluxcd/flux -f ./flux/flux.values.yml --namespace flux
+        - helm upgrade -i helm-operator fluxcd/helm-operator -f ./flux/flux.operator.yml --namespace flux
+        #istio
+        - curl -L https://istio.io/downloadIstio | sh -
+        - cd ./istio-1.5.0
+        - export PATH=$PWD/bin:$PATH
+        - cd ..
+        - ./istio/bash/safety-prepare.sh istio-system example-istiocontrolplane
+        - kubectl apply -f ./istio/profile-config.yml
+        #flagger
+        - ./flagger/bash/safety-prepare.sh istio-system
+        - helm repo add flagger https://flagger.app
+        - kubectl apply -f https://raw.githubusercontent.com/weaveworks/flagger/master/artifacts/flagger/crd.yaml
+        - helm upgrade -i flagger flagger/flagger --namespace=istio-system --set crd.create=false --set meshProvider=istio --set metricsServer=http://prometheus:9090
+    tags:
+        - kuber

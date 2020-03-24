@@ -1,0 +1,51 @@
+apiVersion: flagger.app/v1beta1 
+kind: Canary 
+metadata: 
+    name: frontend 
+    namespace: production 
+spec: 
+    provider: istio 
+    targetRef: 
+        apiVersion: apps/v1 
+        kind: Deployment 
+        name: frontend 
+    service: 
+        port: 80 
+        targetPort: 8080 
+        gateways: 
+        - frontend 
+        hosts: 
+        - "*" 
+        trafficPolicy: 
+            tls:
+                mode: DISABLE 
+    analysis: 
+        interval: 30s 
+        threshold: 5 
+        maxWeight: 30 
+        stepWeight: 5 
+        metrics: 
+        - name: request-success-rate 
+          thresholdRange: 
+            min: 99 
+          interval: 30s 
+        - name: request-duration
+          thresholdRange:
+            max: 500
+          interval: 1m
+        alerts:
+          - name: "canary-error"
+            severity: error
+            providerRef:
+              name: canary-error
+              namespace: istio-system
+          - name: "canary-warn"
+            severity: warn
+            providerRef:
+              name: canary-warn
+              namespace: istio-system
+          - name: "canary-info"
+            severity: info
+            providerRef:
+              name: canary-info
+              namespace: istio-system

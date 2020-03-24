@@ -1,0 +1,37 @@
+apiVersion: flagger.app/v1beta1 
+kind: Canary 
+metadata: 
+    name: productcatalog 
+    namespace: production 
+spec: 
+    provider: istio 
+    targetRef: 
+        apiVersion: apps/v1 
+        kind: Deployment 
+        name: productcatalogservice
+    service:
+        portName: grpc
+        port: 3550 
+        trafficPolicy: 
+            tls:
+                mode: DISABLE 
+    analysis: 
+        interval: 30s 
+        threshold: 5 
+        maxWeight: 30 
+        stepWeight: 5 
+        metrics:
+            - name: error-rate
+              templateRef:
+                name: error-rate
+                namespace: istio-system
+              thresholdRange:
+                max: 1
+              interval: 30s
+            - name: latency
+              templateRef:
+                name: latency
+                namespace: istio-system
+              thresholdRange:
+                max: 500
+              interval: 30s

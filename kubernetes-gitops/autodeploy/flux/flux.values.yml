@@ -1,0 +1,8 @@
+git:
+  url: git@gitlab.com:gugalaps/microservices-demo.git
+  path: deploy
+  ciSkip: true
+  pollInterval: 1m
+  secretName: "flux-git-deploy"
+registry:
+  automationInterval: 1m

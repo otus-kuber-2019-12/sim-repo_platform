@@ -1,0 +1,22 @@
+---
+apiVersion: helm.fluxcd.io/v1
+kind: HelmRelease
+metadata:
+  name: adservice
+  namespace: production
+  annotations:
+    fluxcd.io/ignore: "false"
+    fluxcd.io/automated: "true"
+    flux.weave.works/tag.chart-image: semver:~v0.0
+spec:
+  releaseName: adservice
+  helmVersion: v3
+  chart:
+    git: git@gitlab.com:gugalaps/microservices-demo.git
+    ref: master
+    path: deploy/charts/adservice
+  values:
+    image:
+      repository: neogeowild/adservice
+      tag: 0.0.1
+

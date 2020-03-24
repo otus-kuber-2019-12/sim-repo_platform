@@ -1,0 +1,20 @@
+apiVersion: helm.fluxcd.io/v1
+kind: HelmRelease
+metadata:
+  name: productcatalogservice
+  namespace: production
+  annotations:
+    fluxcd.io/ignore: "false"
+    fluxcd.io/automated: "true"
+    flux.weave.works/tag.chart-image: glob:master-*
+spec:
+  releaseName: productcatalogservice
+  helmVersion: v3
+  chart:
+    git: git@gitlab.com:gugalaps/microservices-demo.git
+    ref: master
+    path: deploy/charts/productcatalogservice
+  values:
+    image:
+      repository: neogeowild/productcatalogservice
+      tag: v.0.0.1

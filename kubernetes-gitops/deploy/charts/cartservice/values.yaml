@@ -1,0 +1,8 @@
+image:
+  repository: neogeowild/cartservice
+  tag: latest
+
+redis:
+  cluster:
+    enabled: false
+  usePassword: false
