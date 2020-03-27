@@ -1,0 +1,5 @@
+image:
+  repository: neogeowild/loadgenerator
+  tag: latest
+ingress:
+  host: istio-ingressgateway

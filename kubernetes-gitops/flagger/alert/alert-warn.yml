@@ -1,0 +1,10 @@
+apiVersion: flagger.app/v1beta1
+kind: AlertProvider
+metadata:
+  name: canary-warn
+  namespace: istio-system
+spec:
+  type: slack
+  channel: canary-warn
+  username: flagger
+  address: https://hooks.slack.com/services/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
