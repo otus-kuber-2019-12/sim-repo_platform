@@ -4,7 +4,7 @@ metadata:
   name: my-csi-app
 spec:
   containers:
-    - name: my-frontend
+    - name: storage-pod
       image: busybox
       volumeMounts:
       - mountPath: "/data"
